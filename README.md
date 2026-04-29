@@ -131,7 +131,20 @@ Restart the Gateway (or the entire application) to load the patch.
 
 ### Full Source Code
 
-The complete patch script is below. It is self-contained with no external dependencies.
+The complete patch script is in `deepseek-reasoning-patch.cjs` in this repo. Key architecture:
+
+```javascript
+// Core data flow:
+// 1. Request intercept → re-inject reasoning_content from cache + convert reasoning_effort → thinking
+// 2. Response intercept → extract reasoning_content from JSON/SSE → save to persistent cache file
+// 3. Graceful degradation → if cache miss on existing assistant messages, disable thinking temporarily
+//
+// Cache: file-based (.reasoning-cache.json), survives Gateway restart
+// Debounced writes: 2s interval to minimize disk I/O
+// Hash key: full content (up to 500 chars) for plain messages, tool:funcName for tool calls
+```
+
+For the full source, see `deepseek-reasoning-patch.cjs`.
 
 ```javascript
 /**
@@ -356,8 +369,8 @@ To disable the patch:
 
 ### Caveats
 
-1. **In-memory cache**: The `reasoning_content` cache resets on Gateway restart. This is acceptable since conversation history is also lost on restart.
-2. **Cache key collisions**: Two different assistant messages with identical last-100-characters of content would share the same cache entry. Extremely unlikely in practice.
+1. **Persistent cache (v4+)**: The cache is saved to `.reasoning-cache.json` alongside the patch script and survives Gateway restarts. Cache writes are debounced (2s interval) to minimize disk I/O.
+2. **Cache key collisions**: Two different assistant messages with identical last-500-characters of content would share the same cache entry. Extremely unlikely in practice. v4 improved from 100 to 500 chars for better uniqueness.
 3. **Memory for SSE parsing**: The entire SSE body is read into memory for cache extraction. For very long streaming responses, this could add memory pressure. In practice, `reasoning_content` is typically a few KB.
 4. **Only intercepts `api.deepseek.com`**: Other providers are unaffected.
 5. **CrawBot updates**: If CrawBot is updated, the preload file may be overwritten. Re-patching may be required.
@@ -369,6 +382,7 @@ To disable the patch:
 | v1 | 29 Apr 10:05 | Initial patch using content hash as cache key. Failed when multiple tool-call messages with empty content collided (all mapped to `""`). |
 | v2 | 29 Apr 10:50 | Fixed cache key to use tool function name(s). Tool-call messages now have unique entries. |
 | **v3** | **29 Apr 11:04** | **Added SSE streaming support. Re-inject for ALL assistant messages (not just tool calls). This is the recommended version.** |
+| **v4** | **29 Apr 13:40** | **Persistent file-based cache (survives Gateway restart). Graceful degradation: auto-disables thinking on cache miss to prevent 400. Improved hash key (500 chars instead of 100). Debounced disk writes.** |
 
 ### Technical Notes
 
@@ -550,8 +564,8 @@ Cả ba turn đều pass. Patch cache chính xác `reasoning_content` từ SSE s
 
 ### Lưu Ý
 
-1. **Cache trong RAM**: Cache `reasoning_content` mất khi restart Gateway. Chấp nhận được vì lịch sử chat cũng mất.
-2. **Collision cache key**: Hai assistant message khác nhau có 100 ký tự cuối giống nhau sẽ dùng chung cache key. Rất hiếm trong thực tế.
+1. **Cache persistent (v4+)**: Cache được lưu vào file `.reasoning-cache.json` cạnh file patch và sống sót sau restart Gateway. Ghi file có debounce (2s) để giảm I/O đĩa.
+2. **Collision cache key**: Hai assistant message khác nhau có 500 ký tự cuối giống nhau sẽ dùng chung cache key. Rất hiếm trong thực tế. v4 cải thiện từ 100 lên 500 ký tự.
 3. **Bộ nhớ cho SSE parsing**: Toàn bộ body SSE được đọc vào RAM để trích xuất cache. Với stream rất dài, có thể tăng áp lực bộ nhớ. Trong thực tế, `reasoning_content` thường chỉ vài KB.
 4. **Chỉ chặn `api.deepseek.com`**: Các provider khác không bị ảnh hưởng.
 5. **CrawBot update**: Nếu CrawBot được cập nhật, file preload có thể bị ghi đè. Cần patch lại.
@@ -563,6 +577,7 @@ Cả ba turn đều pass. Patch cache chính xác `reasoning_content` từ SSE s
 | v1 | 29/04 10:05 | Patch đầu dùng content hash làm cache key. Lỗi khi nhiều tool-call messages có content rỗng (tất cả map về key `""`). |
 | v2 | 29/04 10:50 | Sửa cache key dùng tên function của tool. Mỗi loại tool call có entry riêng. |
 | **v3** | **29/04 11:04** | **Thêm hỗ trợ SSE streaming. Chèn lại cho TẤT CẢ assistant messages (không chỉ tool calls). Đây là phiên bản khuyến nghị.** |
+| **v4** | **29/04 13:40** | **Cache persistent (file `.reasoning-cache.json`), sống sót sau restart Gateway. Graceful degradation: tự động tắt thinking khi cache miss để tránh lỗi 400. Cải thiện hash key (500 ký tự thay vì 100). Ghi file có debounce.** |
 
 ### Ghi Chú Kỹ Thuật
 
@@ -575,4 +590,4 @@ Cả ba turn đều pass. Patch cache chính xác `reasoning_content` từ SSE s
 ---
 
 *Document created: 2026-04-29*
-*Last tested: 2026-04-29 11:18 AM (Asia/Ho_Chi_Minh)*
+*Last updated: 2026-04-29 13:40 PM (Asia/Ho_Chi_Minh)*
