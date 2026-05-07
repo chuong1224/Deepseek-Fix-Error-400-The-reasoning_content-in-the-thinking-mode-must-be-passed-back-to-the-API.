@@ -1,3 +1,16 @@
+<p align="center">
+  <a href="https://github.com/chuong1224/Deepseek-Fix-Error-400-The-reasoning_content-in-the-thinking-mode-must-be-passed-back-to-the-API./releases">
+    <img src="https://img.shields.io/github/v/release/chuong1224/Deepseek-Fix-Error-400-The-reasoning_content-in-the-thinking-mode-must-be-passed-back-to-the-API.?color=brightgreen&label=version" alt="Version">
+  </a>
+  <img src="https://img.shields.io/badge/language-JavaScript-yellow.svg" alt="Language: JavaScript">
+  <a href="https://github.com/chuong1224/Deepseek-Fix-Error-400-The-reasoning_content-in-the-thinking-mode-must-be-passed-back-to-the-API./blob/main/LICENSE">
+    <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT">
+  </a>
+  <a href="https://github.com/chuong1224/Deepseek-Fix-Error-400-The-reasoning_content-in-the-thinking-mode-must-be-passed-back-to-the-API./commits/main">
+    <img src="https://img.shields.io/github/last-commit/chuong1224/Deepseek-Fix-Error-400-The-reasoning_content-in-the-thinking-mode-must-be-passed-back-to-the-API." alt="Last commit">
+  </a>
+</p>
+
 # Fixing DeepSeek V4 Thinking Mode 400 Error
 
 > A runtime monkey-patch for OpenClaw / Cursor / Continue / any OpenAI-compatible client that doesn't handle DeepSeek's `reasoning_content` field.
@@ -381,7 +394,7 @@ To disable the patch:
 |---|---|---|
 | v1 | 29 Apr 10:05 | Initial patch using content hash as cache key. Failed when multiple tool-call messages with empty content collided (all mapped to `""`). |
 | v2 | 29 Apr 10:50 | Fixed cache key to use tool function name(s). Tool-call messages now have unique entries. |
-| **v3** | **29 Apr 11:04** | **Added SSE streaming support. Re-inject for ALL assistant messages (not just tool calls). This is the recommended version.** |
+| **v3** | **29 Apr 11:04** | **Added SSE streaming support. Re-inject for ALL assistant messages, not just tool calls. This is the recommended version.** |
 | **v4** | **29 Apr 13:40** | **Persistent file-based cache (survives Gateway restart). Graceful degradation: auto-disables thinking on cache miss to prevent 400. Improved hash key (500 chars instead of 100). Debounced disk writes.** |
 
 ### Technical Notes
